@@ -20,7 +20,7 @@ BrotherPrinter.prototype = {
             return
         }
         cordova.exec(callback, function(err){console.log('error: '+err)}, 'BrotherPrinter', 'sendUSBConfig', [data])
-    }
+    },
     testTemplate: function (data, callback) {
         if (!data || !data.length) {
             console.log('No data passed in. Expects templates')
