@@ -78,6 +78,11 @@ public class BrotherPrinter extends CordovaPlugin {
             return true;
         }
 
+        if ("testTemplate".equals(action)) {
+            testTemplate(args, callbackContext);
+            return true;
+        }
+
         return false;
     }
 
@@ -238,6 +243,78 @@ public class BrotherPrinter extends CordovaPlugin {
         });
     }
 
+    private void testTemplate(final JSONArray args, final CallbackContext callbackctx) {
+
+        if(!searched){
+            PluginResult result;
+            result = new PluginResult(PluginResult.Status.ERROR, "You must first run findNetworkPrinters() to search the network.");
+            callbackctx.sendPluginResult(result);
+        }
+
+        if(!found){
+            PluginResult result;
+            result = new PluginResult(PluginResult.Status.ERROR, "No printer was found. Aborting.");
+            callbackctx.sendPluginResult(result);
+        }
+
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try{
+
+                    Printer myPrinter = new Printer();
+                    PrinterInfo myPrinterInfo = new PrinterInfo();
+
+                    myPrinterInfo = myPrinter.getPrinterInfo();
+
+                    myPrinterInfo.printerModel  = PrinterInfo.Model.QL_720NW;
+                    myPrinterInfo.port          = PrinterInfo.Port.NET;
+                    myPrinterInfo.printMode     = PrinterInfo.PrintMode.ORIGINAL;
+                    myPrinterInfo.orientation   = PrinterInfo.Orientation.PORTRAIT;
+                    myPrinterInfo.paperSize     = PrinterInfo.PaperSize.CUSTOM;
+					//myPrinterInfo.labelNameIndex= PrinterInfo.LabelNameIndex.W62;
+                    myPrinterInfo.ipAddress     = ipAddress;
+                    myPrinterInfo.macAddress    = macAddress;
+
+                    myPrinter.setPrinterInfo(myPrinterInfo);
+
+                    LabelInfo myLabelInfo = new LabelInfo();
+
+                    myLabelInfo.labelNameIndex  = myPrinter.checkLabelInPrinter();
+                    myLabelInfo.isAutoCut       = true;
+                    myLabelInfo.isEndCut        = true;
+                    myLabelInfo.isHalfCut       = false;
+                    myLabelInfo.isSpecialTape   = false;
+
+                    //label info must be set after setPrinterInfo, it's not in the docs
+                    myPrinter.setLabelInfo(myLabelInfo);
+
+                    String labelWidth = ""+myPrinter.getLabelParam().labelWidth;
+                    String paperWidth = ""+myPrinter.getLabelParam().paperWidth;
+                    Log.d(TAG, "paperWidth = " + paperWidth);
+                    Log.d(TAG, "labelWidth = " + labelWidth);
+                    myPrinter.startCommunication();
+
+					myPrinter.startPTTPrint(4, null); 
+					myPrinter.replaceTextName("code3","pokus");
+					PrinterStatus status = myPrinter.flushPTTPrint();
+
+					myPrinter.endCommunication();  
+
+                    //casting to string doesn't work, but this does... wtf Brother
+                    String status_code = ""+status.errorCode;
+
+                    Log.d(TAG, "PrinterStatus: "+status_code);
+
+                    PluginResult result;
+                    result = new PluginResult(PluginResult.Status.OK, status_code);
+                    callbackctx.sendPluginResult(result);
+
+                }catch(Exception e){    
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 
     private void sendUSBConfig(final JSONArray args, final CallbackContext callbackctx){
 
