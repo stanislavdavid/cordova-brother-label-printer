@@ -1,7 +1,10 @@
+cordova.define("com.threescreens.cordova.plugin.brotherPrinter.BrotherPrinter", function(require, exports, module) {
 var BrotherPrinter = function () {}
 BrotherPrinter.prototype = {
     findNetworkPrinters: function (callback, scope) {
         var callbackFn = function () {
+            if (typeof callback == 'undefined')
+                return;
             var args = typeof arguments[0] == 'boolean' ? arguments : arguments[0]
             callback.apply(scope || window, args)
         }
@@ -31,3 +34,5 @@ BrotherPrinter.prototype = {
 }
 var plugin = new BrotherPrinter()
 module.exports = plugin
+
+});

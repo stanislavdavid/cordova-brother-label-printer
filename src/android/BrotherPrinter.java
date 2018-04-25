@@ -47,13 +47,15 @@ import com.brother.ptouch.sdk.PrinterStatus;
 
 public class BrotherPrinter extends CordovaPlugin {
 
-    String[] modelName = {"QL-720NW","QL-820NWB"};
+    String[] modelNames = {"QL-720NW","QL-820NWB"};
     private NetPrinter[] netPrinters;
 
     private String ipAddress   = null;
+    private PrinterInfo.Model modelName   = null;
     private String macAddress  = null;
     private Boolean searched   = false;
     private Boolean found      = false;
+    private Boolean interstate = false;
 
     //token to make it easy to grep logcat
     private static final String TAG = "print";
@@ -89,7 +91,7 @@ public class BrotherPrinter extends CordovaPlugin {
     private NetPrinter[] enumerateNetPrinters() {
         Printer myPrinter = new Printer();
         PrinterInfo myPrinterInfo = new PrinterInfo();
-        netPrinters = myPrinter.getNetPrinters(modelName);
+        netPrinters = myPrinter.getNetPrinters(modelNames);
         return netPrinters;
     }
 
@@ -105,7 +107,7 @@ public class BrotherPrinter extends CordovaPlugin {
 
                     NetPrinter[] netPrinters = enumerateNetPrinters();
                     int netPrinterCount = netPrinters.length;
-                Log.d(TAG, "---- nalezeno tiskáren:"+ netPrinterCount +" ----");
+                    Log.d(TAG, "---- nalezeno tiskáren:"+ netPrinterCount +" ----");
 
                     ArrayList<Map> netPrintersList = null;
                     if(netPrintersList != null) netPrintersList.clear();
@@ -118,8 +120,9 @@ public class BrotherPrinter extends CordovaPlugin {
                         for (int i = 0; i < netPrinterCount; i++) {
                             Map<String, String> netPrinter = new HashMap<String, String>();
 
-                            ipAddress = netPrinters[i].ipAddress;
+                            ipAddress  = netPrinters[i].ipAddress;
                             macAddress = netPrinters[i].macAddress;
+                            //modelName  = netPrinters[i].modelName;
 
                             netPrinter.put("ipAddress", netPrinters[i].ipAddress);
                             netPrinter.put("macAddress", netPrinters[i].macAddress);
@@ -128,19 +131,19 @@ public class BrotherPrinter extends CordovaPlugin {
 
                             netPrintersList.add(netPrinter);
 
-                            Log.d(TAG, 
-                                        " idx:    " + Integer.toString(i)
-                                    + "\n model:  " + netPrinters[i].modelName
-                                    + "\n ip:     " + netPrinters[i].ipAddress
-                                    + "\n mac:    " + netPrinters[i].macAddress
-                                    + "\n serial: " + netPrinters[i].serNo
-                                    + "\n name:   " + netPrinters[i].nodeName
-                                 );
+                            Log.d(TAG,
+                                    " idx:    " + Integer.toString(i)
+                                            + "\n model:  " + netPrinters[i].modelName
+                                            + "\n ip:     " + netPrinters[i].ipAddress
+                                            + "\n mac:    " + netPrinters[i].macAddress
+                                            + "\n serial: " + netPrinters[i].serNo
+                                            + "\n name:   " + netPrinters[i].nodeName
+                            );
                         }
 
                         Log.d(TAG, "---- /network printers found! ----");
 
-                    }else if (netPrinterCount == 0 ) { 
+                    }else if (netPrinterCount == 0 ) {
                         found = false;
                         Log.d(TAG, "!!!! No network printers found !!!!");
                     }
@@ -157,7 +160,7 @@ public class BrotherPrinter extends CordovaPlugin {
 
                     callbackctx.sendPluginResult(result);
 
-                }catch(Exception e){    
+                }catch(Exception e){
                     e.printStackTrace();
                 }
 
@@ -171,7 +174,7 @@ public class BrotherPrinter extends CordovaPlugin {
         try{
             byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
             return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-        }catch(Exception e){    
+        }catch(Exception e){
             e.printStackTrace();
             return null;
         }
@@ -201,7 +204,6 @@ public class BrotherPrinter extends CordovaPlugin {
                     PrinterInfo myPrinterInfo = new PrinterInfo();
 
                     myPrinterInfo = myPrinter.getPrinterInfo();
-
                     myPrinterInfo.printerModel  = PrinterInfo.Model.QL_720NW;
                     myPrinterInfo.port          = PrinterInfo.Port.NET;
                     myPrinterInfo.printMode     = PrinterInfo.PrintMode.ORIGINAL;
@@ -227,7 +229,7 @@ public class BrotherPrinter extends CordovaPlugin {
                     String paperWidth = ""+myPrinter.getLabelParam().paperWidth;
                     Log.d(TAG, "paperWidth = " + paperWidth);
                     Log.d(TAG, "labelWidth = " + labelWidth);
-                    
+
                     PrinterStatus status = myPrinter.printImage(bitmap);
 
                     //casting to string doesn't work, but this does... wtf Brother
@@ -239,7 +241,7 @@ public class BrotherPrinter extends CordovaPlugin {
                     result = new PluginResult(PluginResult.Status.OK, status_code);
                     callbackctx.sendPluginResult(result);
 
-                }catch(Exception e){    
+                }catch(Exception e){
                     e.printStackTrace();
                 }
             }
@@ -259,6 +261,7 @@ public class BrotherPrinter extends CordovaPlugin {
             result = new PluginResult(PluginResult.Status.ERROR, "No printer was found. Aborting.");
             callbackctx.sendPluginResult(result);
         }
+        Log.d(TAG, "Nalezena tiskárna");
 
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
@@ -268,40 +271,33 @@ public class BrotherPrinter extends CordovaPlugin {
                     PrinterInfo myPrinterInfo = new PrinterInfo();
 
                     myPrinterInfo = myPrinter.getPrinterInfo();
+                    Log.d(TAG, "Získané informace o tiskárně");
 
-                    myPrinterInfo.printerModel  = PrinterInfo.Model.QL_720NW;
+                    myPrinterInfo.printerModel  = PrinterInfo.Model.QL_820NWB;
+//                    myPrinterInfo.printerModel  = modelName;
                     myPrinterInfo.port          = PrinterInfo.Port.NET;
                     myPrinterInfo.printMode     = PrinterInfo.PrintMode.ORIGINAL;
                     myPrinterInfo.orientation   = PrinterInfo.Orientation.PORTRAIT;
                     myPrinterInfo.paperSize     = PrinterInfo.PaperSize.CUSTOM;
-					//myPrinterInfo.labelNameIndex= PrinterInfo.LabelNameIndex.W62;
+                    //myPrinterInfo.labelNameIndex= PrinterInfo.LabelNameIndex.W62;
                     myPrinterInfo.ipAddress     = ipAddress;
                     myPrinterInfo.macAddress    = macAddress;
 
-                    myPrinter.setPrinterInfo(myPrinterInfo);
+                    interstate = myPrinter.setPrinterInfo(myPrinterInfo);
 
-                    LabelInfo myLabelInfo = new LabelInfo();
+                    Log.d(TAG, "Uložené informace o tiskárně");
 
-                    myLabelInfo.labelNameIndex  = myPrinter.checkLabelInPrinter();
-                    myLabelInfo.isAutoCut       = true;
-                    myLabelInfo.isEndCut        = true;
-                    myLabelInfo.isHalfCut       = false;
-                    myLabelInfo.isSpecialTape   = false;
-
-                    //label info must be set after setPrinterInfo, it's not in the docs
-                    myPrinter.setLabelInfo(myLabelInfo);
-
-                    String labelWidth = ""+myPrinter.getLabelParam().labelWidth;
-                    String paperWidth = ""+myPrinter.getLabelParam().paperWidth;
-                    Log.d(TAG, "paperWidth = " + paperWidth);
-                    Log.d(TAG, "labelWidth = " + labelWidth);
+                    //String labelWidth = ""+myPrinter.getLabelParam().labelWidth;
+                    //String paperWidth = ""+myPrinter.getLabelParam().paperWidth;
+                    //Log.d(TAG, "paperWidth = " + paperWidth);
+                    //Log.d(TAG, "labelWidth = " + labelWidth);
                     myPrinter.startCommunication();
 
-					myPrinter.startPTTPrint(4, null); 
-					myPrinter.replaceTextName("code3","pokus");
-					PrinterStatus status = myPrinter.flushPTTPrint();
+                    myPrinter.startPTTPrint(4, null);
+                    myPrinter.replaceTextName("pokus","code3");
+                    PrinterStatus status = myPrinter.flushPTTPrint();
 
-					myPrinter.endCommunication();  
+                    myPrinter.endCommunication();
 
                     //casting to string doesn't work, but this does... wtf Brother
                     String status_code = ""+status.errorCode;
@@ -312,7 +308,7 @@ public class BrotherPrinter extends CordovaPlugin {
                     result = new PluginResult(PluginResult.Status.OK, status_code);
                     callbackctx.sendPluginResult(result);
 
-                }catch(Exception e){    
+                }catch(Exception e){
                     e.printStackTrace();
                 }
             }
@@ -361,12 +357,12 @@ public class BrotherPrinter extends CordovaPlugin {
                     if (!usbManager.hasPermission(usbDevice)) {
                         usbManager.requestPermission(usbDevice, permissionIntent);
                     } else {
-                        break; 
+                        break;
                     }
 
-                    try { 
+                    try {
                         Thread.sleep(1000);
-                    } catch (InterruptedException e) { 
+                    } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
@@ -414,7 +410,7 @@ public class BrotherPrinter extends CordovaPlugin {
 
                 } catch (IOException e) {
                     Log.d(TAG, "Temp file action failed: " + e.toString());
-                } 
+                }
 
             }
         });
