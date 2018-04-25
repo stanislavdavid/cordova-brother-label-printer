@@ -47,7 +47,7 @@ import com.brother.ptouch.sdk.PrinterStatus;
 
 public class BrotherPrinter extends CordovaPlugin {
 
-    String modelName = "QL-720NW";
+    String modelName = {"QL-720NW","QL-820NWB"};
     private NetPrinter[] netPrinters;
 
     private String ipAddress   = null;
@@ -97,6 +97,8 @@ public class BrotherPrinter extends CordovaPlugin {
 
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
+                Log.d(TAG, "---- network printers found! ----");
+
                 try{
 
                     searched = true;
