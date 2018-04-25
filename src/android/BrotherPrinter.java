@@ -97,7 +97,7 @@ public class BrotherPrinter extends CordovaPlugin {
 
         cordova.getThreadPool().execute(new Runnable() {
             public void run() {
-                Log.d(TAG, "---- network printers found! ----");
+                Log.d(TAG, "---- zaciname hledat tiskarnu ----");
 
                 try{
 
@@ -105,6 +105,7 @@ public class BrotherPrinter extends CordovaPlugin {
 
                     NetPrinter[] netPrinters = enumerateNetPrinters();
                     int netPrinterCount = netPrinters.length;
+                Log.d(TAG, "---- nalezeno tiskáren:"+ netPrinterCount +" ----");
 
                     ArrayList<Map> netPrintersList = null;
                     if(netPrintersList != null) netPrintersList.clear();
