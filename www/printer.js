@@ -1,7 +1,7 @@
 var BrotherPrinter = function () {}
 BrotherPrinter.prototype = {
     findNetworkPrinters: function (onSuccess, onFailure) {
-        cordova.exec(osSuccess, onFailure, 'BrotherPrinter', 'findNetworkPrinters', [])
+        cordova.exec(onSuccess, onFailure, 'BrotherPrinter', 'findNetworkPrinters', [])
     },
     printViaSDK: function (data, callback) {
         if (!data || !data.length) {
