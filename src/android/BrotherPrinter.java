@@ -2,6 +2,7 @@ package com.threescreens.cordova.plugin.brotherPrinter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import java.io.File;
@@ -55,7 +56,7 @@ public class BrotherPrinter extends CordovaPlugin {
     private String macAddress  = null;
     private Boolean searched   = false;
     private Boolean found      = false;
-    private Boolean interstate = false;
+
 
     //token to make it easy to grep logcat
     private static final String TAG = "print";
@@ -80,8 +81,8 @@ public class BrotherPrinter extends CordovaPlugin {
             return true;
         }
 
-        if ("testTemplate".equals(action)) {
-            testTemplate(args, callbackContext);
+        if ("printTemplate".equals(action)) {
+            printTemplate(args, callbackContext);
             return true;
         }
 
@@ -248,7 +249,21 @@ public class BrotherPrinter extends CordovaPlugin {
         });
     }
 
-    private void testTemplate(final JSONArray args, final CallbackContext callbackctx) {
+    private void printTemplate(final JSONArray args, final CallbackContext callbackctx) {
+
+
+        JSONObject template_data = null;
+        Integer template_id = null;
+        JSONObject data = null;
+
+        try {
+            template_data = args.getJSONObject(0);
+            template_id = template_data.getInt("template_id");
+            data = template_data.getJSONObject("data");
+        } catch (JSONException e) {
+            Log.e(TAG, "Invalid JSON string: " + args.toString(), e);
+            return;
+        }
 
         if(!searched){
             PluginResult result;
@@ -261,58 +276,51 @@ public class BrotherPrinter extends CordovaPlugin {
             result = new PluginResult(PluginResult.Status.ERROR, "No printer was found. Aborting.");
             callbackctx.sendPluginResult(result);
         }
-        Log.d(TAG, "Nalezena tiskárna");
 
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                try{
+        Printer myPrinter = new Printer();
+        PrinterInfo myPrinterInfo = new PrinterInfo();
 
-                    Printer myPrinter = new Printer();
-                    PrinterInfo myPrinterInfo = new PrinterInfo();
+        myPrinterInfo = myPrinter.getPrinterInfo();
 
-                    myPrinterInfo = myPrinter.getPrinterInfo();
-                    Log.d(TAG, "Získané informace o tiskárně");
+        myPrinterInfo.printerModel  = PrinterInfo.Model.QL_820NWB;
+        myPrinterInfo.port          = PrinterInfo.Port.NET;
+        myPrinterInfo.printMode     = PrinterInfo.PrintMode.ORIGINAL;
+        myPrinterInfo.orientation   = PrinterInfo.Orientation.PORTRAIT;
+        myPrinterInfo.paperSize     = PrinterInfo.PaperSize.CUSTOM;
+        myPrinterInfo.ipAddress     = ipAddress;
+        myPrinterInfo.macAddress    = macAddress;
 
-                    myPrinterInfo.printerModel  = PrinterInfo.Model.QL_820NWB;
-//                    myPrinterInfo.printerModel  = modelName;
-                    myPrinterInfo.port          = PrinterInfo.Port.NET;
-                    myPrinterInfo.printMode     = PrinterInfo.PrintMode.ORIGINAL;
-                    myPrinterInfo.orientation   = PrinterInfo.Orientation.PORTRAIT;
-                    myPrinterInfo.paperSize     = PrinterInfo.PaperSize.CUSTOM;
-                    //myPrinterInfo.labelNameIndex= PrinterInfo.LabelNameIndex.W62;
-                    myPrinterInfo.ipAddress     = ipAddress;
-                    myPrinterInfo.macAddress    = macAddress;
+        myPrinter.setPrinterInfo(myPrinterInfo);
 
-                    interstate = myPrinter.setPrinterInfo(myPrinterInfo);
+        myPrinter.startCommunication();
 
-                    Log.d(TAG, "Uložené informace o tiskárně");
+        myPrinter.startPTTPrint(4, null);
 
-                    //String labelWidth = ""+myPrinter.getLabelParam().labelWidth;
-                    //String paperWidth = ""+myPrinter.getLabelParam().paperWidth;
-                    //Log.d(TAG, "paperWidth = " + paperWidth);
-                    //Log.d(TAG, "labelWidth = " + labelWidth);
-                    myPrinter.startCommunication();
-
-                    myPrinter.startPTTPrint(4, null);
-                    myPrinter.replaceTextName("pokus","code3");
-                    PrinterStatus status = myPrinter.flushPTTPrint();
-
-                    myPrinter.endCommunication();
-
-                    //casting to string doesn't work, but this does... wtf Brother
-                    String status_code = ""+status.errorCode;
-
-                    Log.d(TAG, "PrinterStatus: "+status_code);
-
-                    PluginResult result;
-                    result = new PluginResult(PluginResult.Status.OK, status_code);
-                    callbackctx.sendPluginResult(result);
-
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
+        for(Iterator<String> iter = data.keys(); iter.hasNext();) {
+            String key = iter.next();
+            String value = null;
+            try {
+                value = data.getString(key);
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        });
+            Log.d(TAG, "adresa_stitku: "+key+" hodnota stitku:"+value);
+            myPrinter.replaceTextName(value,key);
+        }
+
+        PrinterStatus status = myPrinter.flushPTTPrint();
+
+        myPrinter.endCommunication();
+
+        //casting to string doesn't work, but this does... wtf Brother
+        String status_code = ""+status.errorCode;
+
+        Log.d(TAG, "PrinterStatus: "+status_code);
+
+        PluginResult result;
+        result = new PluginResult(PluginResult.Status.OK, status_code);
+        callbackctx.sendPluginResult(result);
+
     }
 
     private void sendUSBConfig(final JSONArray args, final CallbackContext callbackctx){
