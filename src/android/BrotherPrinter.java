@@ -294,7 +294,7 @@ public class BrotherPrinter extends CordovaPlugin {
 
         myPrinter.startCommunication();
 
-        myPrinter.startPTTPrint(4, null);
+        myPrinter.startPTTPrint(template_id, null);
 
         for(Iterator<String> iter = data.keys(); iter.hasNext();) {
             String key = iter.next();
